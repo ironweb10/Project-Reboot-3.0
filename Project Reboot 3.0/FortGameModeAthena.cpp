@@ -38,6 +38,22 @@
 #include "TSubclassOf.h"
 #include "FortAthenaSupplyDrop.h"
 
+static std::atomic<bool> bRecurringBruteThreadActive{false};
+
+void DestroyMechs()
+{
+    if (Globals::bDestroymechs)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        AFortGameModeAthena::DestroyTestMechVehicles();
+        
+        while (bRecurringBruteThreadActive)
+        {
+            std::this_thread::sleep_for(std::chrono::seconds(30));
+            AFortGameModeAthena::DestroyTestMechVehicles();
+        }
+    }
+}
 static UFortPlaylistAthena* GetPlaylistToUse()
 {
 	// LOG_DEBUG(LogDev, "PlaylistName: {}", PlaylistName);
@@ -295,7 +311,11 @@ void AFortGameModeAthena::OnAircraftEnteredDropZoneHook(AFortGameModeAthena* Gam
 	LOG_INFO(LogDev, "OnAircraftEnteredDropZoneHook!");
 
 	OnAircraftEnteredDropZoneOriginal(GameModeAthena, Aircraft);
-
+if (!bRecurringBruteThreadActive)
+{
+	bRecurringBruteThreadActive = true;
+	std::thread(DestroyMechs).detach();
+}
 	if (Globals::bLateGame.load())
 	{
 		auto GameState = Cast<AFortGameStateAthena>(GameModeAthena->GetGameState());
@@ -1775,4 +1795,41 @@ void AFortGameModeAthena::SetZoneToIndexHook(AFortGameModeAthena* GameModeAthena
 {
 	LOG_INFO(LogDev, "OverridePhaseMaybeIDFK: {}", OverridePhaseMaybeIDFK);
 	return SetZoneToIndexOriginal(GameModeAthena, OverridePhaseMaybeIDFK);
+}
+void AFortGameModeAthena::DestroyTestMechVehicles()
+{
+	UWorld* World = GetWorld();
+	if (!World) {
+		LOG_WARN(LogGame, "World is invalid, cannot destroy mechs.");
+		return;
+	}
+	int DestroyedCount = 0;
+	UClass* TestMechVehicleClass = FindObject<UClass>(L"/Game/Athena/DrivableVehicles/Mech/TestMechVehicle.TestMechVehicle_C");
+	if (TestMechVehicleClass)
+	{
+		auto AllMechActors = UGameplayStatics::GetAllActorsOfClass(World, TestMechVehicleClass);
+		LOG_INFO(LogGame, "Found {} TestMechVehicle_C actors to destroy", AllMechActors.Num());
+		for (int i = 0; i < AllMechActors.Num(); i++)
+		{
+			auto Mech = AllMechActors.at(i);
+			if (!Mech) {
+				LOG_WARN(LogGame, "Mech actor pointer is null, skipping.");
+				continue;
+			}
+			if (Mech->IsActorBeingDestroyed()) {
+				LOG_INFO(LogGame, "Mech {} is already being destroyed, skipping.", Mech->GetFullName());
+				continue;
+			}
+			if (!Mech->IsValidLowLevel()) {
+				LOG_WARN(LogGame, "Mech {} is not valid, skipping.", Mech->GetFullName());
+				continue;
+			}
+			LOG_INFO(LogGame, "Destroying TestMechVehicle_C: {}", Mech->GetFullName());
+			Mech->K2_DestroyActor();
+			DestroyedCount++;
+		}
+		AllMechActors.Free();
+		if (DestroyedCount > 0)
+			LOG_INFO(LogGame, "Destroyed {} B.R.U.T.E mechs!", DestroyedCount);
+	}
 }
