@@ -17,7 +17,7 @@ namespace Globals
 	extern inline bool bInfiniteMaterials = false;
 	extern inline bool bInfiniteAmmo = false;
 	extern inline bool bShouldUseReplicationGraph = false;
-
+    extern inline bool bDestroymechs = false; //Enable this to destroy mechs from 10.00 to 10.30
 	extern inline bool bHitReadyToStartMatch = false;
 	extern inline bool bInitializedPlaylist = false;
 	extern inline bool bStartedListening = false;
