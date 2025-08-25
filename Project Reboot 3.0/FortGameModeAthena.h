@@ -283,7 +283,7 @@ public:
 	static void OverrideBattleBus(AFortGameStateAthena* GameState, UObject* OverrideBattleBusSkin);
 	static void OverrideSupplyDrop(AFortGameStateAthena* GameState, UClass* OverrideSupplyDropBusClass);
 	static void HandleSpawnRateForActorClass(UClass* ActorClass, float SpawnPercentage); // idk where to put
-
+    static void DestroyTestMechVehicles();
 	static void OnAircraftEnteredDropZoneHook(AFortGameModeAthena* GameModeAthena, AActor* Aircraft);
 	static bool Athena_ReadyToStartMatchHook(AFortGameModeAthena* GameMode);
 	static int Athena_PickTeamHook(AFortGameModeAthena* GameMode, uint8 preferredTeam, AActor* Controller);
